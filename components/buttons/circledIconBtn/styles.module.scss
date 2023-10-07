@@ -1,0 +1,42 @@
+.button {
+  position: relative;
+  border: none;
+  outline: none;
+  width: 220px;
+  height: 55px;
+  border-radius: 55px;
+  font-weight: 600;
+  color: #fff;
+  background: $blue-color; /* Assuming you have $blue-color defined */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 20px;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+  svg {
+    color: $blue-color;
+  }
+  &:hover {
+    background: #fff;
+    color: $blue-color;
+    .svg__wrap {
+      transform: translateX(
+        410%
+      ); /* Adjust the percentage based on your desired transition distance */
+    }
+  }
+
+  .svg__wrap {
+    margin-left: -9px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $grey-color; /* Assuming you have $grey-color defined */
+    transform: translateX(0); /* Initial position */
+    transition: transform 0.3s ease; /* Transition for movement */
+  }
+}
