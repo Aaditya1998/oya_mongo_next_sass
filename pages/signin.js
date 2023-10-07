@@ -118,7 +118,7 @@ export default function signin({ country, providers }) {
                         )}
                       </button>
                     </div>
-                    <CircledIconBtn type="submit" text="Sign in" />
+                    <CircledIconBtn type="submit" text="Slide to Sign in" />
                     <div className={styles.forgot}>
                       <Link href="/forget">Forgot password ?</Link>
                     </div>
@@ -217,7 +217,7 @@ export default function signin({ country, providers }) {
                         )}
                       </button>
                     </div>
-                    <CircledIconBtn type="submit" text="Sign up" />
+                    <CircledIconBtn type="submit" text="Slide to Sign up" />
                   </Form>
                 )}
               </Formik>
