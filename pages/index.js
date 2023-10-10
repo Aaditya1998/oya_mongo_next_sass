@@ -13,6 +13,7 @@ export default function Home({ country }) {
   return (
     <div>
       <Header country={country} />
+
       <Footer country={country} />
     </div>
   );

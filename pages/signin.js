@@ -12,23 +12,42 @@ import * as Yup from "yup";
 import LoginInput from "@/components/inputs/loginInput";
 import { EyeClose, Eye } from "@styled-icons/remix-line";
 import CircledIconBtn from "@/components/buttons/circledIconBtn";
-import { getProviders, signIn } from "next-auth/react";
-
+import {
+  getCsrfToken,
+  getSession,
+  getProviders,
+  signIn,
+} from "next-auth/react";
+import axios from "axios";
+import DotLoaderSpinner from "@/components/loaders/dotLoader";
+import Router from "next/router";
 const initialValues = {
   login_email: "",
   login_password: "",
+  login_error: "",
   name: "",
   email: "",
   password: "",
   conf_pass: "",
+  success: "",
+  error: "",
 };
 
-export default function signin({ country, providers }) {
-  console.log(providers);
+export default function signin({ country, providers, callbackUrl, csrfToken }) {
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initialValues);
   const [showPassword, setShowPassword] = useState(false);
-  const { login_email, login_password, name, email, password, conf_password } =
-    user;
+  const {
+    login_email,
+    login_password,
+    login_error,
+    name,
+    email,
+    password,
+    conf_password,
+    success,
+    error,
+  } = user;
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUser({ ...user, [name]: value });
@@ -64,10 +83,53 @@ export default function signin({ country, providers }) {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-
+  const signUpHandler = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axios.post("/api/auth/signup", {
+        name,
+        email,
+        password,
+      });
+      setUser({ ...user, error: "", success: data.message });
+      setLoading(false);
+      setTimeout(async () => {
+        let options = {
+          redirect: false,
+          email: email,
+          password: password,
+        };
+        const res = await signIn("credentials", options);
+        Router.push("/");
+      }, 2000);
+    } catch (error) {
+      setLoading(false);
+      const errorMessage =
+        error.response?.data?.message || "An error occurred.";
+      setUser({ ...user, success: "", error: errorMessage });
+    }
+  };
+  const signInHandler = async () => {
+    setLoading(true);
+    let options = {
+      redirect: false,
+      email: login_email,
+      password: login_password,
+    };
+    const res = await signIn("credentials", options);
+    setUser({ ...user, success: "", error: "" });
+    setLoading(false);
+    if (res?.error) {
+      setLoading(false);
+      setUser({ ...user, login_error: res?.error });
+    } else {
+      return Router.push(callbackUrl || "/");
+    }
+  };
   return (
     <div>
       <>
+        {loading && <DotLoaderSpinner Loading={loading} />}
         <Header country={country} />
         <div className={styles.login}>
           <div className={styles.login__container}>
@@ -85,9 +147,17 @@ export default function signin({ country, providers }) {
                 enableReinitialize
                 initialValues={{ login_email, login_password }}
                 validationSchema={loginValidation}
+                onSubmit={() => {
+                  signInHandler();
+                }}
               >
                 {(form) => (
-                  <Form>
+                  <Form method="post" action="/api/auth/signin/email">
+                    <input
+                      type="hidden"
+                      name="csrfToken"
+                      defaultValue={csrfToken}
+                    />
                     <LoginInput
                       type="text"
                       name="login_email"
@@ -119,6 +189,9 @@ export default function signin({ country, providers }) {
                       </button>
                     </div>
                     <CircledIconBtn type="submit" text="Slide to Sign in" />
+                    {login_error && (
+                      <span className={styles.error}>{login_error}</span>
+                    )}
                     <div className={styles.forgot}>
                       <Link href="/forget">Forgot password ?</Link>
                     </div>
@@ -128,18 +201,26 @@ export default function signin({ country, providers }) {
               <div className={styles.login__socials}>
                 <span className={styles.or}>Or continue with</span>
                 <div className={styles.login__socials_wrap}>
-                  {providers.map((provider) => (
-                    <div key={provider.name}>
-                      <button
-                        className={styles.social__btn}
-                        onClick={() => signIn(provider.id)}
-                      >
-                        <img src={`../../icons/${provider.name}.png`} alt="" />
-                        Sign in with
-                        {provider.name}
-                      </button>
-                    </div>
-                  ))}
+                  {providers.map((provider) => {
+                    if (provider.name == "Credentials") {
+                      return;
+                    }
+                    return (
+                      <div key={provider.name}>
+                        <button
+                          className={styles.social__btn}
+                          onClick={() => signIn(provider.id)}
+                        >
+                          <img
+                            src={`../../icons/${provider.name}.png`}
+                            alt=""
+                          />
+                          Sign in with
+                          {provider.name}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -154,6 +235,9 @@ export default function signin({ country, providers }) {
                 enableReinitialize
                 initialValues={{ name, email, password, conf_password }}
                 validationSchema={registerValidation}
+                onSubmit={() => {
+                  signUpHandler();
+                }}
               >
                 {(form) => (
                   <Form>
@@ -221,6 +305,12 @@ export default function signin({ country, providers }) {
                   </Form>
                 )}
               </Formik>
+              <div>
+                {success && <span className={styles.success}>{success}</span>}
+              </div>
+              <div>
+                {error && <span className={styles.error}>{error}</span>}
+              </div>
             </div>
           </div>
         </div>
@@ -231,8 +321,20 @@ export default function signin({ country, providers }) {
 }
 
 export async function getServerSideProps(context) {
+  const { req, query } = context;
+  const session = await getSession({ req });
+
+  const { callbackUrl } = query;
+  if (session) {
+    return {
+      redirect: {
+        destination: callbackUrl,
+      },
+    };
+  }
+  const csrfToken = await getCsrfToken(context);
   const providers = Object.values(await getProviders());
   return {
-    props: { providers },
+    props: { providers, csrfToken, callbackUrl },
   };
 }
