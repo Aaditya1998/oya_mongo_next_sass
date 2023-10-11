@@ -5,6 +5,7 @@ import db from "@/utils/db";
 import User from "../../../models/User";
 import { createActivationToken } from "@/utils/tokens";
 import { sendEmail } from "@/utils/sendEmails";
+import { activateEmailTemplate } from "@/emails/activateEmailTemplate";
 const router = createRouter();
 
 router.post(async (req, res) => {
@@ -33,7 +34,7 @@ router.post(async (req, res) => {
       id: addedUser._id.toString(),
     });
     const url = `${process.env.BASE_URL}/activate/${activation_token}`;
-    sendEmail(email, url, "", "Activate your Account.");
+    sendEmail(email, url, "", "Activate your Account.", activateEmailTemplate);
     await db.disconnectDb();
     res.json({
       message: "Register success! Please activate your email to start.",

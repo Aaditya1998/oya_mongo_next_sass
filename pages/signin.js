@@ -21,6 +21,7 @@ import {
 import axios from "axios";
 import DotLoaderSpinner from "@/components/loaders/dotLoader";
 import Router from "next/router";
+import { BiLeftArrowAlt } from "react-icons/bi";
 const initialValues = {
   login_email: "",
   login_password: "",
@@ -134,6 +135,9 @@ export default function signin({ country, providers, callbackUrl, csrfToken }) {
         <div className={styles.login}>
           <div className={styles.login__container}>
             <div className={styles.login__header}>
+              <div className={styles.back__svg}>
+                <BiLeftArrowAlt />
+              </div>
               <span>
                 We'd be happy to join us! <Link href="/">Go Store</Link>
               </span>
@@ -193,7 +197,7 @@ export default function signin({ country, providers, callbackUrl, csrfToken }) {
                       <span className={styles.error}>{login_error}</span>
                     )}
                     <div className={styles.forgot}>
-                      <Link href="/forget">Forgot password ?</Link>
+                      <Link href="/auth/forgot">Forgot password ?</Link>
                     </div>
                   </Form>
                 )}
